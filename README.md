@@ -1,3 +1,12 @@
+# Russ notes
+using 4.5.4
+conda create -n jigsaw python
+conda activate jigsaw
+conda install -c conda-forge gdcm 
+pip install -r requirements.txt
+
+
+
 # JigsawPuzzlePytorch
 Pytorch implementation of the paper ["Unsupervised Learning of Visual Representations by Solving Jigsaw Puzzles"](https://arxiv.org/abs/1603.09246) by Mehdi Noroozi [GitHub](https://github.com/MehdiNoroozi/JigsawPuzzleSolver)
 

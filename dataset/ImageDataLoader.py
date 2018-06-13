@@ -65,7 +65,7 @@ class DataLoader():
         shuffle(self.names)
         return self
     
-    def next(self):
+    def __next__(self):
         try:
             names = [self.data_path+'/'+n for n in self.names[self.counter:self.counter+self.batchsize]]
         except IndexError:
@@ -74,7 +74,7 @@ class DataLoader():
         batch = [load_image(n,self.permutations,self.__image_transformer,self.__augment_tile) 
                  for n in names]
         
-        data, labels = zip(*batch)
+        data, labels = list(zip(*batch))
         labels = torch.LongTensor(labels)
         data = torch.stack(data, 0)
         return data, labels, 0

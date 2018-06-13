@@ -1,4 +1,5 @@
-IMAGENET_FOLD=path_to_ILSVRC2012_img
+IMAGENET_FOLD=~/data/PEONY-2018-06
+IMAGENET_FOLD=~/data/PEONY-2018-06/patients/HCA137955/2016-04-04/
 
 GPU=${1} # gpu used
 CHECKPOINTS_FOLD=${2} #path_to_output_folder
