@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import os
+import pickle
 
 import matplotlib.pyplot as plt
 import pydicom
@@ -11,7 +12,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 from PIL import Image
 
-TILE_INFO_FILE = 'tile_info.pickle'
+TILE_INFO_FILE = 'stored_context.pickle'
 JIGSAWS = 120
 VALFRAC = 0.25
 
@@ -77,7 +78,7 @@ class DicomDataset(data.Dataset):
         self.data = tablib.Dataset(headers='dicom_file patient exam_date rows cols layers lateral view desc'.split())
         self._data_scrape(self.data_path)
         self.permutations = self._retrieve_permutations(classes)
-        self._retrieve_tiles()
+        self._retrieve_context()
         self.__image_transformer = transforms.Compose([
             transforms.Resize(256, Image.BILINEAR),
             transforms.CenterCrop(255)])
@@ -89,7 +90,8 @@ class DicomDataset(data.Dataset):
             # transforms.Normalize(mean=[0.485, 0.456, 0.406],
             # std =[0.229, 0.224, 0.225])
         ])
-        self.mytiles = self.tiles['test']
+        # we have computed/retrieved the train and val lists, now we select which we need
+        self.mytiles = self.tiles['train'] if train else self.tiles['val']
 
     def __getitem__(self, index):
         framename = self.data_path + '/' + self.names[index]
@@ -125,7 +127,7 @@ class DicomDataset(data.Dataset):
         return data, int(order), tiles
 
     def __len__(self):
-        return len(self.names)
+        return len(self.mytiles)
 
     def _dicom_info(self, path, verbose=False):
         """extract info from file at path."""
@@ -198,21 +200,28 @@ class DicomDataset(data.Dataset):
             all_perm = all_perm - 1
         return all_perm
 
-    def _retrieve_tiles(self):
+    def _retrieve_context(self):
+        f = TILE_INFO_FILE
         try:
-            self.tiles = np.load(TILE_INFO_FILE)
+            self.context = pickle.load(open(f, 'rb'))
+            print('loaded context from %s' % f)
+            # check the set of files is still the same as when tiles computed
+            assert self.data == self.context['data']
+            self.tiles = self.context['tiles']
+            self.data = self.context['data']
         except IOError as ex:
-            print("failed loading %s")
+            print("failed loading context from %s, so we'll compute afresh" % f)
             print(ex)
-            self.tiles = self._compute_tiles()
-            np.save(TILE_INFO_FILE, self.tiles)
+            self._compute_tiles()
+            context = dict(tiles=self.tiles, data=self.data)
+            pickle.dump(context, open(TILE_INFO_FILE, 'wb'))
 
     def _compute_tiles(self):
-        train_files, val_files = partition_train_val_sets(self.data)
+        self.train_files, self.val_files = partition_train_val_sets(self.data)
         self.tiles = dict(train=[], val=[])
         print('compute train tiles')
         while len(self.tiles['train']) < JIGSAWS:
-            for f in train_files:
+            for f in self.train_files:
                 print(f)
                 try:
                     self.tiles['train'].extend(define_random_tiles(f, 255, 5))
@@ -221,10 +230,11 @@ class DicomDataset(data.Dataset):
                     print(ex)
         print('compute val tiles')
         while len(self.tiles['val']) < JIGSAWS:
-            print(f)
-            for f in val_files:
+            for f in self.val_files:
+                print(f)
                 try:
                     self.tiles['val'].extend(define_random_tiles(f, 255, 5))
                 except TypeError as ex:
                     print("failed reading file %s" % f)
                     print(ex)
+
