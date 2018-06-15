@@ -1,4 +1,3 @@
-import pydicom
 import tablib
 import os
 
@@ -53,18 +52,14 @@ def test_get_items():
             /home/pc1/data/PEONY-2018-06/patients/HCA217594/"""
     assert os.path.isfile(CONTEXT_FILE)
     dds = DicomDataset(dp)
-    assert hasattr(dds, 'from_context')
-
-    jj = dds[0]
-    pass
+    _ = dds[0]
 
 
-def test_get_items():
+def test_plot_items():
     dp = """/home/pc1/data/PEONY-2018-06/patients/HCA110723/
             /home/pc1/data/PEONY-2018-06/patients/HCA18595/
             /home/pc1/data/PEONY-2018-06/patients/HCA265541/
             /home/pc1/data/PEONY-2018-06/patients/HCA217594/"""
     assert os.path.isfile(CONTEXT_FILE)
     dds = DicomDataset(dp)
-    assert hasattr(dds, 'from_context')
     dds.plot_item(0)

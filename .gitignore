@@ -3,3 +3,4 @@ checkpoints*
 JpsTraininig
 run.sh
 .idea
+stored_context.pickle
