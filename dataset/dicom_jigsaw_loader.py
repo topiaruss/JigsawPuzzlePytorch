@@ -13,7 +13,10 @@ import torchvision.transforms as transforms
 from PIL import Image
 
 CONTEXT_FILE = 'stored_context.pickle'
+CACHE_DIR = 'blockcache/'
 JIGSAWS = 120
+TRAIN_BLOCKS = dict(count=120, step=10)
+VAL_BLOCKS = dict(count=12, step=3)
 VALFRAC = 0.25
 BLOCK_SIDE = 255
 
@@ -36,14 +39,42 @@ def normalise(img, bits):
     return img / (2 ** bits - 1)
 
 
+def compute_block_hash(block_dict):
+    hash_dict = block_dict.copy()
+    hash_dict.pop('coverage')
+    return str(hash(frozenset(hash_dict.items())))
+
+
 def get_defined_block(row):
     """given a row from data, return the block"""
-    ds = pydicom.dcmread(row['path'])
-    layer, x, y, side = row['layer'], row['x'], row['y'], row['side']
-    return ds.pixel_array[layer][x:x + side, y:y + side]
+    print('gdb: %s' % row)
+    hh, hit = uncache_block(row['hash'])
+    if hit is None:
+        print('miss: %s, hh: %s' % (row, hh))
+        ds = pydicom.dcmread(row['path'])
+        layer, x, y, side = row['layer'], row['x'], row['y'], row['side']
+        return ds.pixel_array[layer][x:x + side, y:y + side]
+    #print('hit: %s' % hit)
+    return hit
 
 
-def define_random_blocks(path, side, count, maxtries=1000):
+def cache_block(norm, block_dict):
+        hh = compute_block_hash(block_dict)
+        block_dict['hash'] = hh
+        with open(os.path.join(CACHE_DIR, hh), 'wb') as f:
+            pickle.dump(norm, f)
+
+
+def uncache_block(hash):
+    try:
+        with open(os.path.join(CACHE_DIR, hash), 'rb') as f:
+            return hash, pickle.load(f)
+    except Exception as ex:
+        print(ex)
+        return None, None
+
+
+def define_random_blocks(path, side, count, maxtries=1000, cache=True):
     """Returns a descriptor for up to count blocks that have at least 0.75 coverage"""
     ds = pydicom.dcmread(path)
     layers, x, y = ds.pixel_array.shape
@@ -62,7 +93,9 @@ def define_random_blocks(path, side, count, maxtries=1000):
             continue
         min, mean, max = norm.min(), norm.mean(), norm.max()
         print('cov: %4.3f, min: %4.3f, max %4.3f, mean %4.3f, tries %d' % (mask_mean, min, max, mean, tries))
-        blocks.append(dict(path=path, layer=layer, x=x, y=y, side=side, coverage=mask_mean))
+        block_dict = dict(path=path, layer=layer, x=x, y=y, side=side, coverage=mask_mean)
+        cache_block(norm, block_dict)
+        blocks.append(block_dict)
         if len(blocks) >= count:
             break
     return blocks
@@ -109,9 +142,6 @@ class DicomDataset(data.Dataset):
 
     def __getitem__(self, index):
         """
-
-        :param index:
-        :return:
         BORD = pixel border
         SIDE = side of output square
         """
@@ -246,6 +276,7 @@ class DicomDataset(data.Dataset):
             self.blocks = self.context['blocks']
             self.data = self.context['data']
             self.from_context = True
+
         except IOError as ex:
             print("failed loading context from %s, so we'll compute afresh" % CONTEXT_FILE)
             print(ex)
@@ -257,21 +288,20 @@ class DicomDataset(data.Dataset):
         self.train_files, self.val_files = partition_train_val_sets(self.data)
         self.blocks = dict(train=[], val=[])
         print('compute train blocks')
-        while len(self.blocks['train']) < JIGSAWS:
+        while len(self.blocks['train']) < TRAIN_BLOCKS['count']:
             for f in self.train_files:
                 print(f)
                 try:
-                    self.blocks['train'].extend(define_random_blocks(f, BLOCK_SIDE, 5))
+                    self.blocks['train'].extend(define_random_blocks(f, BLOCK_SIDE, TRAIN_BLOCKS['step']))
                 except TypeError as ex:
                     print("failed reading file %s" % f)
                     print(ex)
         print('compute val blocks')
-        while len(self.blocks['val']) < JIGSAWS:
+        while len(self.blocks['val']) < VAL_BLOCKS['count']:
             for f in self.val_files:
                 print(f)
                 try:
-                    self.blocks['val'].extend(define_random_blocks(f, BLOCK_SIDE, 5))
+                    self.blocks['val'].extend(define_random_blocks(f, BLOCK_SIDE, VAL_BLOCKS['step']))
                 except TypeError as ex:
                     print("failed reading file %s" % f)
                     print(ex)
-

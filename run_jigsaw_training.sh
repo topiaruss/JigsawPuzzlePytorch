@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 IMAGENET_FOLD=~/data/PEONY-2018-06
 IMAGENET_FOLD=~/data/PEONY-2018-06/patients/HCA137955/2016-04-04/
-IMAGENET_FOLD='/home/pc1/data/PEONY-2018-06/patients/HCA110723/ /home/pc1/data/PEONY-2018-06/patients/HCA18595/ /home/pc1/data/PEONY-2018-06/patients/HCA265541/ /home/pc1/data/PEONY-2018-06/patients/HCA217594/'
+IMAGENET_FOLD='/home/pc1/fastdata/PEONY-2018-06/patients/HCA110723/ /home/pc1/fastdata/PEONY-2018-06/patients/HCA18595/ /home/pc1/fastdata/PEONY-2018-06/patients/HCA265541/ /home/pc1/fastdata/PEONY-2018-06/patients/HCA217594/'
 GPU=1 # gpu used
 CHECKPOINTS_FOLD=${2} #path_to_output_folder
 

@@ -129,6 +129,17 @@ def main():
             # Forward + Backward + Optimize
             optimizer.zero_grad()
             t = time()
+            """
+            https://discuss.pytorch.org/t/expected-stride-to-be-a-single-integer-value-or-a-list/17612/2
+            (Pdb) images.size()
+            torch.Size([128, 9, 75, 75])
+            (Pdb) images.unsqueeze_(2)
+             ...
+            (Pdb) images.size()
+            torch.Size([128, 9, 1, 75, 75])
+
+            """
+            images.unsqueeze_(2)
             outputs = net(images)
             net_time.append(time() - t)
             if len(net_time) > 100:
