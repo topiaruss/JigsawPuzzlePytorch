@@ -55,3 +55,44 @@ To change the file name loaded for the permutations, open the file *JigsawLoader
 # ToDo
 - TensorboardX
 - LMDB DataLoader
+
+## Original Network
+```python
+
+Network(
+  (conv): Sequential(
+    (conv1_s1): Conv2d(3, 96, kernel_size=(11, 11), stride=(2, 2))
+    (relu1_s1): ReLU(inplace)
+    (pool1_s1): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (lrn1_s1): LRN(
+      (average): AvgPool3d(kernel_size=(5, 1, 1), stride=1, padding=(2, 0, 0))
+    )
+    (conv2_s1): Conv2d(96, 256, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=2)
+    (relu2_s1): ReLU(inplace)
+    (pool2_s1): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (lrn2_s1): LRN(
+      (average): AvgPool3d(kernel_size=(5, 1, 1), stride=1, padding=(2, 0, 0))
+    )
+    (conv3_s1): Conv2d(256, 384, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (relu3_s1): ReLU(inplace)
+    (conv4_s1): Conv2d(384, 384, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=2)
+    (relu4_s1): ReLU(inplace)
+    (conv5_s1): Conv2d(384, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=2)
+    (relu5_s1): ReLU(inplace)
+    (pool5_s1): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc6): Sequential(
+    (fc6_s1): Linear(in_features=2304, out_features=1024, bias=True)
+    (relu6_s1): ReLU(inplace)
+    (drop6_s1): Dropout(p=0.5)
+  )
+  (fc7): Sequential(
+    (fc7): Linear(in_features=9216, out_features=4096, bias=True)
+    (relu7): ReLU(inplace)
+    (drop7): Dropout(p=0.5)
+  )
+  (classifier): Sequential(
+    (fc8): Linear(in_features=4096, out_features=1000, bias=True)
+  )
+)
+```

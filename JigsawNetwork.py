@@ -11,6 +11,8 @@ import torch.nn.init as init
 
 import sys
 
+COLOUR_CHANNELS = 1
+
 sys.path.append('Utils')
 from Layers import LRN
 
@@ -21,7 +23,7 @@ class Network(nn.Module):
         super(Network, self).__init__()
 
         self.conv = nn.Sequential()
-        self.conv.add_module('conv1_s1', nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
+        self.conv.add_module('conv1_s1', nn.Conv2d(COLOUR_CHANNELS, 96, kernel_size=11, stride=2, padding=0))
         self.conv.add_module('relu1_s1', nn.ReLU(inplace=True))
         self.conv.add_module('pool1_s1', nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv.add_module('lrn1_s1', LRN(local_size=5, alpha=0.0001, beta=0.75))
