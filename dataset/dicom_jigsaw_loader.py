@@ -80,9 +80,15 @@ def get_patient_id(path):
     return None
 
 
+def get_dicom_path_list(paths):
+    if type(paths) is list:
+        return paths
+    return paths.split()
+
+
 class DicomDataset(data.Dataset):
     def __init__(self, data_path, classes=1000, train=True):
-        self.data_path = data_path.split()
+        self.data_path = get_dicom_path_list(data_path)
         self.data = tablib.Dataset(headers='dicom_file patient exam_date rows cols layers lateral view desc'.split())
         self._data_scrape(self.data_path)
         self.permutations = self._retrieve_permutations(classes)
@@ -233,6 +239,7 @@ class DicomDataset(data.Dataset):
             # check the set of files is still the same as when blocks computed
             pickled = self.context['data']
             fresh = self.data
+            assert len(fresh) == len(pickled)
             diffs = [(a, fresh[i]) for i, a in enumerate(pickled) if a != fresh[i]]
             print('DIFFS:', diffs)
             assert not diffs

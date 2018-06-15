@@ -22,13 +22,13 @@ sys.path.append('dataset')
 from JigsawNetwork import Network
 
 from TrainingUtils import adjust_learning_rate, compute_accuracy
-from DicomJigsawLoader import DicomDataset
+from dicom_jigsaw_loader import DicomDataset
 
 parser = argparse.ArgumentParser(description='Train JigsawPuzzleSolver on Imagenet')
-parser.add_argument('data', type=str, help='Path to Imagenet folder')
+parser.add_argument('data', type=str, nargs='+', help='Path(s) to Dicom folder(s)')
 parser.add_argument('--model', default=None, type=str, help='Path to pretrained model')
 parser.add_argument('--classes', default=1000, type=int, help='Number of permutation to use')
-parser.add_argument('--gpu', default=0, type=int, help='gpu id')
+parser.add_argument('--gpu', default=1, type=int, help='gpu id')
 parser.add_argument('--epochs', default=70, type=int, help='number of total epochs for training')
 parser.add_argument('--iter_start', default=0, type=int, help='Starting iteration count')
 parser.add_argument('--batch', default=256, type=int, help='batch size')
@@ -51,7 +51,9 @@ def main():
     print('Process number: %d' % (os.getpid()))
 
     trainpath = args.data
-    assert os.path.exists(trainpath)
+    for p in trainpath:
+        assert os.path.exists(p)
+
     # The first instance of DicomDataset currently splits and stores exams for train/val
     train_data = DicomDataset(trainpath, classes=args.classes)
     train_loader = torch.utils.data.DataLoader(dataset=train_data,
@@ -59,15 +61,13 @@ def main():
                                                shuffle=True,
                                                num_workers=args.cores)
 
-    val_data = DataLoader(trainpath, classes=args.classes, train=False)
+    val_data = DicomDataset(trainpath, classes=args.classes, train=False)
     val_loader = torch.utils.data.DataLoader(dataset=val_data,
                                              batch_size=args.batch,
                                              shuffle=True,
                                              num_workers=args.cores)
-    N = train_data.N
-
-    iter_per_epoch = train_data.N / args.batch
-    print('Images: train %d, validation %d' % (train_data.N, val_data.N))
+    iter_per_epoch = len(train_data) / args.batch
+    print('Images: train %d, validation %d' % (len(train_data), len(val_data)))
 
     # Network initialize
     net = Network(args.classes)

@@ -1,9 +1,10 @@
+#!/usr/bin/env bash
 IMAGENET_FOLD=~/data/PEONY-2018-06
 IMAGENET_FOLD=~/data/PEONY-2018-06/patients/HCA137955/2016-04-04/
-
-GPU=${1} # gpu used
+IMAGENET_FOLD='/home/pc1/data/PEONY-2018-06/patients/HCA110723/ /home/pc1/data/PEONY-2018-06/patients/HCA18595/ /home/pc1/data/PEONY-2018-06/patients/HCA265541/ /home/pc1/data/PEONY-2018-06/patients/HCA217594/'
+GPU=1 # gpu used
 CHECKPOINTS_FOLD=${2} #path_to_output_folder
 
 #python JigsawTrain.py ${IMAGENET_FOLD} --checkpoint=${CHECKPOINTS_FOLD} \
 #                      --classes=1000 --batch 128 --lr=0.001 --gpu=${GPU} --cores=10
-python JigsawTrain.py ${IMAGENET_FOLD} --classes=1000 --batch 128 --lr=0.001 --cores=10
+python -m pdb JigsawTrain.py ${IMAGENET_FOLD} --classes=1000 --batch 128 --lr=0.001 --cores=4 --gpu=${GPU}
