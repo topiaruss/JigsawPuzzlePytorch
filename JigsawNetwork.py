@@ -70,18 +70,20 @@ class Network(nn.Module):
         torch.save(self.state_dict(), checkpoint)
 
     def forward(self, x):
-        # B, T, C, H, W = x.size()
+        if len(x.size()) == 4:
+            import pdb; pdb.set_trace()
+        B, T, C, H, W = x.size()
         x = x.transpose(0, 1)
 
         x_list = []
         for i in range(9):
             z = self.conv(x[i])
-            z = self.fc6(z.view(COLOUR_CHANNELS, -1))
-            z = z.view([COLOUR_CHANNELS, 1, -1])
+            z = self.fc6(z.view(B, -1))
+            z = z.view([B, 1, -1])
             x_list.append(z)
 
         x = cat(x_list, 1)
-        x = self.fc7(x.view(COLOUR_CHANNELS, -1))
+        x = self.fc7(x.view(B, -1))
         x = self.classifier(x)
 
         return x
