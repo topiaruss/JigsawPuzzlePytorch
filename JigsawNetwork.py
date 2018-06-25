@@ -70,8 +70,11 @@ class Network(nn.Module):
         torch.save(self.state_dict(), checkpoint)
 
     def forward(self, x):
-        if len(x.size()) == 4:
-            import pdb; pdb.set_trace()
+        #print('fwd: size %s' % str(x.size()))
+
+        # if len(x.size()) == 4:
+        #     import pdb; pdb.set_trace()
+
         B, T, C, H, W = x.size()
         x = x.transpose(0, 1)
 

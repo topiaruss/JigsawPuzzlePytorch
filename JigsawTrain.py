@@ -29,12 +29,12 @@ parser.add_argument('data', type=str, nargs='+', help='Path(s) to Dicom folder(s
 parser.add_argument('--model', default=None, type=str, help='Path to pretrained model')
 parser.add_argument('--classes', default=1000, type=int, help='Number of permutation to use')
 parser.add_argument('--gpu', default=1, type=int, help='gpu id')
-parser.add_argument('--epochs', default=70, type=int, help='number of total epochs for training')
+parser.add_argument('--epochs', default=500, type=int, help='number of total epochs for training')
 parser.add_argument('--iter_start', default=0, type=int, help='Starting iteration count')
 parser.add_argument('--batch', default=256, type=int, help='batch size')
 parser.add_argument('--checkpoint', default='checkpoints/', type=str, help='checkpoint folder')
 parser.add_argument('--lr', default=0.001, type=float, help='learning rate for SGD optimizer')
-parser.add_argument('--cores', default=0, type=int, help='number of CPU core for loading')
+parser.add_argument('--cores', default=0, type=int, help='number of CPU cores for loading')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set, No training')
 args = parser.parse_args()
@@ -112,7 +112,7 @@ def main():
     for epoch in range(int(args.iter_start / iter_per_epoch), args.epochs):
         if epoch % 10 == 0 and epoch > 0:
             test(net, criterion, logger_test, val_loader, steps)
-        lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=20, decay=0.1)
+        lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=50, decay=0.1)
 
         end = time()
         for i, (images, labels, original) in enumerate(train_loader):
@@ -120,7 +120,7 @@ def main():
             if len(batch_time) > 100:
                 del batch_time[0]
 
-            images = Variable(images)
+            images = Variable(images).float()
             labels = Variable(labels)
             if args.gpu is not None:
                 images = images.cuda()
@@ -146,7 +146,7 @@ def main():
                 del net_time[0]
 
             prec1, prec5 = compute_accuracy(outputs.cpu().data, labels.cpu().data, topk=(1, 5))
-            acc = prec1[0]
+            acc = prec1.item()
 
             loss = criterion(outputs, labels)
             loss.backward()
@@ -155,21 +155,21 @@ def main():
 
             if steps % 20 == 0:
                 print(
-                ('[%2d/%2d] %5d) [batch load % 2.3fsec, net %1.2fsec], LR %.5f, Loss: % 1.3f, Accuracy % 2.2f%%' % (
-                    epoch + 1, args.epochs, steps,
-                    np.mean(batch_time), np.mean(net_time),
-                    lr, loss, acc)))
+                    ('[%2d/%2d] %5d) [batch load % 2.3fsec, net %1.2fsec], LR %.5f, Loss: % 1.3f, Accuracy % 2.2f%%' % (
+                        epoch + 1, args.epochs, steps,
+                        np.mean(batch_time), np.mean(net_time),
+                        lr, loss, acc)))
 
             if steps % 20 == 0:
                 logger.scalar_summary('accuracy', acc, steps)
                 logger.scalar_summary('loss', loss, steps)
 
                 original = [im[0] for im in original]
-                imgs = np.zeros([9, 75, 75, 3])
+                imgs = np.zeros([9, 75, 75])
                 for ti, img in enumerate(original):
                     img = img.numpy()
-                    imgs[ti] = np.stack([(im - im.min()) / (im.max() - im.min())
-                                         for im in img], axis=2)
+                    xx = [(im - im.min()) / (im.max() - im.min()) for im in img]
+                    imgs[ti] = np.stack(xx, axis=1)
 
                 logger.image_summary('input', imgs, steps)
 
@@ -192,11 +192,12 @@ def test(net, criterion, logger, val_loader, steps):
     accuracy = []
     net.eval()
     for i, (images, labels, _) in enumerate(val_loader):
-        images = Variable(images)
+        images = Variable(images).float()
         if args.gpu is not None:
             images = images.cuda()
 
         # Forward + Backward + Optimize
+        images.unsqueeze_(2)
         outputs = net(images)
         outputs = outputs.cpu().data
 

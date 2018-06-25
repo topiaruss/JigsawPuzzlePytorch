@@ -47,7 +47,7 @@ def compute_block_hash(block_dict):
 
 def get_defined_block(row):
     """given a row from data, return the block"""
-    print('gdb: %s' % row)
+    # print('gdb: %s' % row)
     hh, hit = uncache_block(row['hash'])
     if hit is None:
         print('miss: %s, hh: %s' % (row, hh))
@@ -160,9 +160,11 @@ class DicomDataset(data.Dataset):
             orig = [int(s * i + BORD), int(s * j + BORD)]
             end = [int(o + SIDE) for o in orig]
             tile = img[orig[0]:end[0], orig[1]:end[1]]
-            # print(i, j, orig, end, tile.shape)
-            # Normalize the patches independently to avoid low level features shortcut
-            tile = torch.from_numpy(tile/tile.max())
+            tmax = tile.max()
+            if tmax < 0.0:
+                print('tile.max %s' % tmax)
+            tile = tile / tmax if tmax > 0.0 else np.zeros_like(tile)
+            tile = torch.from_numpy(tile)
             tiles[n] = tile
 
         order = np.random.randint(len(self.permutations))
