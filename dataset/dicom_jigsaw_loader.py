@@ -4,6 +4,8 @@ import os
 import pickle
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from matplotlib import cm
 import pydicom
 import random
 import tablib
@@ -15,8 +17,8 @@ from PIL import Image
 CONTEXT_FILE = 'stored_context.pickle'
 CACHE_DIR = 'blockcache/'
 JIGSAWS = 120
-TRAIN_BLOCKS = dict(count=2000, step=10)
-VAL_BLOCKS = dict(count=200, step=3)
+TRAIN_BLOCKS = dict(count=4000, step=20)
+VAL_BLOCKS = dict(count=500, step=6)
 VALFRAC = 0.25
 BLOCK_SIDE = 255
 
@@ -128,7 +130,7 @@ def get_dicom_path_list(paths):
 
 
 class DicomDataset(data.Dataset):
-    def __init__(self, data_path, classes=1000, train=True, fast=False):
+    def __init__(self, data_path, classes=1000, train=True, fast=False, show_blocks=False):
         self.data_path = get_dicom_path_list(data_path)
         self.data = tablib.Dataset(headers='dicom_file patient exam_date rows cols layers lateral view desc'.split())
         if not fast:
@@ -138,6 +140,8 @@ class DicomDataset(data.Dataset):
             self.data = None
         self.permutations = self._retrieve_permutations(classes)
         self._retrieve_context()
+        if show_blocks:
+            self._show_blocks()
         self.__image_transformer = transforms.Compose([
             transforms.Resize(256, Image.BILINEAR),
             transforms.CenterCrop(255)])
@@ -161,7 +165,7 @@ class DicomDataset(data.Dataset):
         SIDE = 75
 
         img = get_defined_block(self.myblocks[index])
-        s = img.shape[0] / 3.0
+        s = img.shape[0] / 3.0jet
         tiles = [None] * 9
 
         for n in range(9):
@@ -204,6 +208,25 @@ class DicomDataset(data.Dataset):
 
     def __len__(self):
         return len(self.myblocks)
+
+    def _show_blocks(self):
+        for exam in self.data:
+            path, pat, exam_date, rows, columns, nof, lateral, view, desc = exam
+            df = pydicom.read_file(path)
+            layers, x, y = df.pixel_array.shape
+            image = df.pixel_array[5]
+            plt.imshow(image)
+            currentAxis = plt.gca()
+            for phase in ['train', 'val']:
+                cmap = cm.get_cmap('spring' if phase == 'train' else 'summer')
+                blocks = [b for b in self.blocks[phase] if b['path'] == path]
+                for bb in blocks:
+                    layer, x, y, side, coverage = bb['layer'], bb['x'], bb['y'], bb['side'], bb['coverage']
+                    rgba = cmap(float(layer) / layers)
+                    currentAxis.add_patch(Rectangle((y, x), side, side, color=rgba, fill=False))
+                    currentAxis.annotate(str(layer), (y, x), color=rgba)
+                    print(bb)
+            plt.show()
 
     def _dicom_info(self, path, verbose=False):
         """extract info from file at path."""

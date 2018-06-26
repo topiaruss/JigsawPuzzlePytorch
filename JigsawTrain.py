@@ -38,6 +38,7 @@ parser.add_argument('--lr', default=0.001, type=float, help='learning rate for S
 parser.add_argument('--cores', default=0, type=int, help='number of CPU cores for loading')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set, No training')
+parser.add_argument('--blocks', default=False, action='store_true', help='show blocks in images')
 args = parser.parse_args()
 
 
@@ -56,7 +57,7 @@ def main():
         assert os.path.exists(p)
 
     # The first instance of DicomDataset currently splits and stores exams for train/val
-    train_data = DicomDataset(trainpath, classes=args.classes, fast=args.fast)
+    train_data = DicomDataset(trainpath, classes=args.classes, fast=args.fast, show_blocks=args.blocks)
     train_loader = torch.utils.data.DataLoader(dataset=train_data,
                                                batch_size=args.batch,
                                                shuffle=True,
