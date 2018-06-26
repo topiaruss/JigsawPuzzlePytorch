@@ -161,7 +161,7 @@ def main():
                     intensity_range = im.max() - im.min()
                     if intensity_range == 0.0:
                         return np.zeros_like(im)
-                    return (im - im.min()) / range
+                    return (im - im.min()) / intensity_range
 
                 for ti, img in enumerate(original):
                     img = img.numpy()
