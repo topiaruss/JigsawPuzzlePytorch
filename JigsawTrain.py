@@ -30,6 +30,7 @@ parser.add_argument('--model', default=None, type=str, help='Path to pretrained 
 parser.add_argument('--classes', default=1000, type=int, help='Number of permutation to use')
 parser.add_argument('--gpu', default=1, type=int, help='gpu id')
 parser.add_argument('--epochs', default=500, type=int, help='number of total epochs for training')
+parser.add_argument('--fast', default=False, action='store_true', help='fast assumes same input files')
 parser.add_argument('--iter_start', default=0, type=int, help='Starting iteration count')
 parser.add_argument('--batch', default=256, type=int, help='batch size')
 parser.add_argument('--checkpoint', default='checkpoints/', type=str, help='checkpoint folder')
@@ -55,7 +56,7 @@ def main():
         assert os.path.exists(p)
 
     # The first instance of DicomDataset currently splits and stores exams for train/val
-    train_data = DicomDataset(trainpath, classes=args.classes)
+    train_data = DicomDataset(trainpath, classes=args.classes, fast=args.fast)
     train_loader = torch.utils.data.DataLoader(dataset=train_data,
                                                batch_size=args.batch,
                                                shuffle=True,
@@ -129,21 +130,10 @@ def main():
             # Forward + Backward + Optimize
             optimizer.zero_grad()
             t = time()
-            """
-            https://discuss.pytorch.org/t/expected-stride-to-be-a-single-integer-value-or-a-list/17612/2
-            (Pdb) images.size()
-            torch.Size([128, 9, 75, 75])
-            (Pdb) images.unsqueeze_(2)
-             ...
-            (Pdb) images.size()
-            torch.Size([128, 9, 1, 75, 75])
-
-            """
-            images.unsqueeze_(2)
+            images.unsqueeze_(2)  # put this in the dataset
             outputs = net(images)
             net_time.append(time() - t)
-            if len(net_time) > 100:
-                del net_time[0]
+            net_time = net_time[-100:]
 
             prec1, prec5 = compute_accuracy(outputs.cpu().data, labels.cpu().data, topk=(1, 5))
             acc = prec1.item()
@@ -155,7 +145,7 @@ def main():
 
             if steps % 20 == 0:
                 print(
-                    ('[%2d/%2d] %5d) [batch load % 2.3fsec, net %1.2fsec], LR %.5f, Loss: % 1.3f, Accuracy % 2.2f%%' % (
+                    ('[%2d/%2d] %5d) [batch load % 2.3fsec, net %1.2fsec], LR %.5f, Loss: % 1.3f, Acc % 2.2f%%' % (
                         epoch + 1, args.epochs, steps,
                         np.mean(batch_time), np.mean(net_time),
                         lr, loss, acc)))
@@ -166,10 +156,16 @@ def main():
 
                 original = [im[0] for im in original]
                 imgs = np.zeros([9, 75, 75])
+
+                def normalize_img(im):
+                    intensity_range = im.max() - im.min()
+                    if intensity_range == 0.0:
+                        return np.zeros_like(im)
+                    return (im - im.min()) / range
+
                 for ti, img in enumerate(original):
                     img = img.numpy()
-                    xx = [(im - im.min()) / (im.max() - im.min()) for im in img]
-                    imgs[ti] = np.stack(xx, axis=1)
+                    imgs[ti] = np.stack([normalize_img(im) for im in img], axis=1)
 
                 logger.image_summary('input', imgs, steps)
 
@@ -197,16 +193,16 @@ def test(net, criterion, logger, val_loader, steps):
             images = images.cuda()
 
         # Forward + Backward + Optimize
-        images.unsqueeze_(2)
+        images.unsqueeze_(2)  # put this in the dataset
         outputs = net(images)
         outputs = outputs.cpu().data
 
         prec1, prec5 = compute_accuracy(outputs, labels, topk=(1, 5))
-        accuracy.append(prec1[0])
+        accuracy.append(prec1.item())
 
     if logger is not None:
         logger.scalar_summary('accuracy', np.mean(accuracy), steps)
-    print('TESTING: %d), Accuracy %.2f%%' % (steps, np.mean(accuracy)))
+    print('TESTING: %d), Accuracy %.5f%%' % (steps, np.mean(accuracy)))
     net.train()
 
 

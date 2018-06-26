@@ -15,10 +15,19 @@ from PIL import Image
 CONTEXT_FILE = 'stored_context.pickle'
 CACHE_DIR = 'blockcache/'
 JIGSAWS = 120
-TRAIN_BLOCKS = dict(count=120, step=10)
-VAL_BLOCKS = dict(count=12, step=3)
+TRAIN_BLOCKS = dict(count=2000, step=10)
+VAL_BLOCKS = dict(count=200, step=3)
 VALFRAC = 0.25
 BLOCK_SIDE = 255
+
+
+class LoaderError(Exception):
+    """Base class for exceptions in this module."""
+    pass
+
+
+class FilesChanged(LoaderError):
+    pass
 
 
 def partition_train_val_sets(data):
@@ -47,7 +56,6 @@ def compute_block_hash(block_dict):
 
 def get_defined_block(row):
     """given a row from data, return the block"""
-    # print('gdb: %s' % row)
     hh, hit = uncache_block(row['hash'])
     if hit is None:
         print('miss: %s, hh: %s' % (row, hh))
@@ -120,12 +128,14 @@ def get_dicom_path_list(paths):
 
 
 class DicomDataset(data.Dataset):
-    def __init__(self, data_path, classes=1000, train=True):
+    def __init__(self, data_path, classes=1000, train=True, fast=False):
         self.data_path = get_dicom_path_list(data_path)
         self.data = tablib.Dataset(headers='dicom_file patient exam_date rows cols layers lateral view desc'.split())
-        # self._data_scrape(self.data_path)
-        print('***** Skipping data scrape for testing')
-        self.data = None
+        if not fast:
+            self._data_scrape(self.data_path)
+        else:
+            print('***** Skipping data scrape for testing')
+            self.data = None
         self.permutations = self._retrieve_permutations(classes)
         self._retrieve_context()
         self.__image_transformer = transforms.Compose([
@@ -275,18 +285,20 @@ class DicomDataset(data.Dataset):
             fresh = self.data
 
             if fresh is not None:
-                assert len(fresh) == len(pickled)
+                if len(fresh) != len(pickled):
+                    raise FilesChanged('fresh and pickled counts differ')
                 diffs = [(a, fresh[i]) for i, a in enumerate(pickled) if a != fresh[i]]
                 print('DIFFS:', diffs)
-                assert not diffs
+                if diffs:
+                    raise FilesChanged('diffs found')
 
             self.blocks = self.context['blocks']
             self.data = self.context['data']
             self.from_context = True
 
-        except IOError as ex:
-            print("failed loading context from %s, so we'll compute afresh" % CONTEXT_FILE)
+        except (IOError, FilesChanged) as ex:
             print(ex)
+            print("we'll compute afresh: %s" % CONTEXT_FILE)
             self._compute_blocks()
             context = dict(blocks=self.blocks, data=self.data)
             pickle.dump(context, open(CONTEXT_FILE, 'wb'))
