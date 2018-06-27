@@ -165,7 +165,7 @@ class DicomDataset(data.Dataset):
         SIDE = 75
 
         img = get_defined_block(self.myblocks[index])
-        s = img.shape[0] / 3.0jet
+        s = img.shape[0] / 3.0
         tiles = [None] * 9
 
         for n in range(9):
@@ -180,13 +180,15 @@ class DicomDataset(data.Dataset):
             tile = tile / tmax if tmax > 0.0 else np.zeros_like(tile)
             tile = torch.from_numpy(tile)
             tiles[n] = tile
-
+        # prevent all sub threads taking on same perm
+        np.random.seed()
         order = np.random.randint(len(self.permutations))
         data = [tiles[self.permutations[order][t]] for t in range(9)]
         data = torch.stack(data, 0)
+        #self.plot_item(data, order, tiles)
         return data, order, tiles
 
-    def plot_item(self, index):
+    def plot_item(self, data, order, tiles, index=None, ):
         """Plots 18 squares. First 9 are the permuted tiles. Last 9 are original.
         Prints to console the permutation index and permutation.
         You can see how the permutation dictates the placement of the tiles from the
@@ -195,16 +197,20 @@ class DicomDataset(data.Dataset):
         :param index: index into the dataset
 
         """
-        data, order, tiles = self[index]
-        fig = plt.figure(figsize=(6, 3))
-        print("order: %s, %s" % (order, self.permutations[order]))
+        if index is not None:
+            data, order, tiles = self[index]
+        title = "order: %s, %s" % (order, self.permutations[order])
+        fig = plt.figure(num=title, figsize=(6, 3))
+        print(title)
         for i in range(9):
-            fig.add_subplot(6, 3, i+1)
+            ax1 = fig.add_subplot(6, 3, i+1)
+            ax1.set_ylabel(self.permutations[order][i])
             plt.imshow(data[i])
         for i in range(9):
             fig.add_subplot(6, 3, i+1+9)
             plt.imshow(tiles[i])
         plt.show()
+        plt.pause(0.001)
 
     def __len__(self):
         return len(self.myblocks)
