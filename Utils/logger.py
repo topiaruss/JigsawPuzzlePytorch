@@ -4,10 +4,7 @@
 import tensorflow as tf
 import numpy as np
 import scipy.misc 
-try:
-    from io import StringIO  # Python 2.7
-except ImportError:
-    from io import BytesIO         # Python 3.x
+from io import BytesIO         # Python 3.x
 
 
 class Logger(object):
@@ -27,11 +24,8 @@ class Logger(object):
         img_summaries = []
         for i, img in enumerate(images):
             # Write the image to a string
-            try:
-                s = StringIO()
-            except:
-                s = BytesIO()
-            scipy.misc.toimage(img).save(s, format="png")
+            s = BytesIO()
+            scipy.misc.toimage(img).save(s, format=b"png")
 
             # Create an Image object
             img_sum = tf.Summary.Image(encoded_image_string=s.getvalue(),

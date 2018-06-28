@@ -31,7 +31,7 @@ parser.add_argument('--gpu', default=0, type=int, help='gpu id')
 parser.add_argument('--epochs', default=70, type=int, help='number of total epochs for training')
 parser.add_argument('--iter_start', default=0, type=int, help='Starting iteration count')
 parser.add_argument('--batch', default=256, type=int, help='batch size')
-parser.add_argument('--checkpoint', default='checkpoints/', type=str, help='checkpoint folder')
+parser.add_argument('--checkpoint', default='checkpoints0/', type=str, help='checkpoint folder')
 parser.add_argument('--lr', default=0.001, type=float, help='learning rate for SGD optimizer')
 parser.add_argument('--cores', default=0, type=int, help='number of CPU core for loading')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
@@ -53,7 +53,7 @@ def main():
     print('Process number: %d'%(os.getpid()))
     
     ## DataLoader initialize ILSVRC2012_train_processed
-    trainpath = args.data+'/ILSVRC2012_img_train'
+    trainpath = args.data+'/ILSVRC2012_train'
     if os.path.exists(trainpath+'_255x255'):
         trainpath += '_255x255'
     train_data = DataLoader(trainpath,args.data+'/ilsvrc12_train.txt',
@@ -63,7 +63,7 @@ def main():
                                             shuffle=True,
                                             num_workers=args.cores)
     
-    valpath = args.data+'/ILSVRC2012_img_val'
+    valpath = args.data+'/ILSVRC2012_val'
     if os.path.exists(valpath+'_255x255'):
         valpath += '_255x255'
     val_data = DataLoader(valpath, args.data+'/ilsvrc12_val.txt',
@@ -143,7 +143,7 @@ def main():
                 del net_time[0]
             
             prec1, prec5 = compute_accuracy(outputs.cpu().data, labels.cpu().data, topk=(1, 5))
-            acc = prec1[0]
+            acc = prec1.item()
 
             loss = criterion(outputs, labels)
             loss.backward()
@@ -167,7 +167,7 @@ def main():
                     imgs[ti] = np.stack([(im-im.min())/(im.max()-im.min()) 
                                          for im in img],axis=2)
                 
-                logger.image_summary('input', imgs, steps)
+                # logger.image_summary('input', imgs, steps)
 
             steps += 1
 
