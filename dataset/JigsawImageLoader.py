@@ -14,7 +14,7 @@ from PIL import Image
 class DataLoader(data.Dataset):
     def __init__(self, data_path, txt_list, classes=1000):
         self.data_path = data_path
-        self.names, _ = self.__dataset_info(txt_list)
+        self.names = self.__dataset_info(txt_list)
         self.N = len(self.names)
         self.permutations = self.__retrive_permutations(classes)
 
@@ -71,13 +71,10 @@ class DataLoader(data.Dataset):
             images_list = f.readlines()
 
         file_names = []
-        labels = []
         for row in images_list:
-            row = row.split(' ')
-            file_names.append(row[0])
-            labels.append(int(row[1]))
+            file_names.append(row.strip())
 
-        return file_names, labels
+        return file_names
 
     def __retrive_permutations(self, classes):
         all_perm = np.load('permutations_%d.npy' % (classes))

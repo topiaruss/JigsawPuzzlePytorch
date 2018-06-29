@@ -10,5 +10,7 @@ CORES=4
 
 #python JigsawTrain.py ${IMAGENET_FOLD} --checkpoint=${CHECKPOINTS_FOLD} \
 #                      --classes=1000 --batch 128 --lr=0.001 --gpu=${GPU} --cores=10
-python -m pdb JigsawTrain.py ${IMAGENET_FOLD} --classes=1000 --batch 128 --lr=0.1 --cores=${CORES} --gpu=${GPU} \
+#python -m pdb JigsawTrain.py ${IMAGENET_FOLD} --classes=1000 --batch 128 --lr=0.1 --cores=${CORES} --gpu=${GPU} \
+#  --epochs=500
+python -m pdb JigsawTrain.py --ILSparent=/home/pc1/fastdata --classes=1000 --batch 256 --lr=0.1 --cores=${CORES} --gpu=${GPU} \
   --epochs=500

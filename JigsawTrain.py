@@ -22,10 +22,12 @@ sys.path.append('dataset')
 from JigsawNetwork import Network
 
 from TrainingUtils import adjust_learning_rate, compute_accuracy
-from dicom_jigsaw_loader import DicomDataset
+#from dicom_jigsaw_loader import DicomDataset
+from JigsawImageLoader import DataLoader
 
 parser = argparse.ArgumentParser(description='Train JigsawPuzzleSolver on Imagenet')
-parser.add_argument('data', type=str, nargs='+', help='Path(s) to Dicom folder(s)')
+parser.add_argument('data', type=str, nargs='?', help='Path(s) to Dicom folder(s)')
+parser.add_argument('--ILSparent', type=str, help='Path to parent of ILSVRC2012 folders')
 parser.add_argument('--model', default=None, type=str, help='Path to pretrained model')
 parser.add_argument('--classes', default=1000, type=int, help='Number of permutation to use')
 parser.add_argument('--gpu', default=1, type=int, help='gpu id')
@@ -52,18 +54,25 @@ def main():
 
     print('Process number: %d' % (os.getpid()))
 
-    trainpath = args.data
-    for p in trainpath:
-        assert os.path.exists(p)
+    if args.data:
+        trainpath = args.data
+        for p in trainpath:
+            assert os.path.exists(p)
+    else:
+        trainpath = os.path.join(args.ILSparent, 'ILSVRC2012_train_255x255')
+        valpath = os.path.join(args.ILSparent, 'ILSVRC2012_val_255x255')
+        trainlist = os.path.join(args.ILSparent, 'ilsvrc12_train.txt')
+        vallist = os.path.join(args.ILSparent, 'ilsvrc12_val.txt')
+
 
     # The first instance of DicomDataset currently splits and stores exams for train/val
-    train_data = DicomDataset(trainpath, classes=args.classes, fast=args.fast, show_blocks=args.blocks)
+    train_data = DataLoader(trainpath, trainlist, classes=args.classes)
     train_loader = torch.utils.data.DataLoader(dataset=train_data,
                                                batch_size=args.batch,
                                                shuffle=True,
                                                num_workers=args.cores)
 
-    val_data = DicomDataset(trainpath, classes=args.classes, train=False)
+    val_data = DataLoader(valpath, vallist, classes=args.classes)
     val_loader = torch.utils.data.DataLoader(dataset=val_data,
                                              batch_size=args.batch,
                                              shuffle=True,
