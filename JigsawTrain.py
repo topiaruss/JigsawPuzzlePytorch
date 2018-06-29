@@ -159,13 +159,18 @@ def main():
             if steps%20==0:
                 logger.scalar_summary('accuracy', acc, steps)
                 logger.scalar_summary('loss', loss, steps)
-                
+
+                def normalize_img(im):
+                    intensity_range = im.max() - im.min()
+                    if intensity_range == 0.0:
+                        return np.zeros_like(im)
+                    return (im - im.min()) / intensity_range
+
                 original = [im[0] for im in original]
                 imgs = np.zeros([9,75,75,3])
                 for ti, img in enumerate(original):
                     img = img.numpy()
-                    imgs[ti] = np.stack([(im-im.min())/(im.max()-im.min()) 
-                                         for im in img],axis=2)
+                    imgs[ti] = np.stack([normalize_img(im) for im in img],axis=2)
                 
                 # logger.image_summary('input', imgs, steps)
 
