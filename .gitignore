@@ -5,3 +5,4 @@ run.sh
 .idea
 stored_context.pickle
 blockcache
+.pytest_cache
