@@ -24,7 +24,7 @@ class DataLoader(data.Dataset):
         self.__augment_tile = transforms.Compose([
             transforms.RandomCrop(64),
             transforms.Resize((75, 75), Image.BILINEAR),
-            transforms.Lambda(rgb_jittering),
+#            transforms.Lambda(rgb_jittering),
             transforms.ToTensor(),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406],
             # std =[0.229, 0.224, 0.225])
@@ -33,9 +33,9 @@ class DataLoader(data.Dataset):
     def __getitem__(self, index):
         framename = self.data_path + '/' + self.names[index]
 
-        img = Image.open(framename).convert('RGB')
-        if np.random.rand() < 0.30:
-            img = img.convert('LA').convert('RGB')
+        img = Image.open(framename).convert('L')
+        # if np.random.rand() < 0.30:
+        #     img = img.convert('LA').convert('RGB')
 
         if img.size[0] != 255:
             img = self.__image_transformer(img)

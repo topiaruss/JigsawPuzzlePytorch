@@ -140,7 +140,6 @@ def main():
             # Forward + Backward + Optimize
             optimizer.zero_grad()
             t = time()
-            images.unsqueeze_(2)  # put this in the dataset
             outputs = net(images)
             net_time.append(time() - t)
             net_time = net_time[-100:]
@@ -175,7 +174,7 @@ def main():
 
                 for ti, img in enumerate(original):
                     img = img.numpy()
-                    imgs[ti] = np.stack([normalize_img(im) for im in img], axis=1)
+                    imgs[ti] = np.stack([normalize_img(im) for im in img], axis=0)
 
                 logger.image_summary('input', imgs, steps)
 
@@ -203,7 +202,6 @@ def test(net, criterion, logger, val_loader, steps):
             images = images.cuda()
 
         # Forward + Backward + Optimize
-        images.unsqueeze_(2)  # put this in the dataset
         outputs = net(images)
         outputs = outputs.cpu().data
 

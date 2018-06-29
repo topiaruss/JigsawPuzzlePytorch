@@ -1,4 +1,6 @@
-checkpoints*
+checkpoints/
+checkpoints0/
+checkpoints.1/
 *.pyc
 JpsTraininig
 run.sh
