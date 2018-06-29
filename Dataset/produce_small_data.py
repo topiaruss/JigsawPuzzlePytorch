@@ -4,20 +4,19 @@ Created on Thu Sep 14 12:16:31 2017
 
 @author: Biagio Brattoli
 """
-import os, sys, numpy as np
-import argparse
-from time import time
-from tqdm import tqdm
+import os
 
 import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
-
 from PIL import Image
+from tqdm import tqdm
 
 datapath = '/home/pc1/data/torrents/'
 
 trainval = 'train'
+
+
 # trainval = 'val'
 
 

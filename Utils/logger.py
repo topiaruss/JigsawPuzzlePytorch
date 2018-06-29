@@ -1,14 +1,15 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-"
 # Code referenced from https://gist.github.com/gyglim/1f8dfb1b5c82627ae3efcfbbadb9f514
-import tensorflow as tf
+from io import BytesIO  # Python 3.x
+
 import numpy as np
-import scipy.misc 
-from io import BytesIO         # Python 3.x
+import scipy.misc
+import tensorflow as tf
 
 
 class Logger(object):
-    
+
     def __init__(self, log_dir):
         """Create a summary writer logging to log_dir."""
         self.writer = tf.summary.FileWriter(log_dir)
@@ -37,7 +38,7 @@ class Logger(object):
         # Create and write Summary
         summary = tf.Summary(value=img_summaries)
         self.writer.add_summary(summary, step)
-        
+
     def histo_summary(self, tag, values, step, bins=1000):
         """Log a histogram of the tensor of values."""
 
@@ -50,7 +51,7 @@ class Logger(object):
         hist.max = float(np.max(values))
         hist.num = int(np.prod(values.shape))
         hist.sum = float(np.sum(values))
-        hist.sum_squares = float(np.sum(values**2))
+        hist.sum_squares = float(np.sum(values ** 2))
 
         # Drop the start of the first bin
         bin_edges = bin_edges[1:]
